@@ -14,7 +14,7 @@ class InstallCommand extends Command
         $os = PHP_OS_FAMILY;
         $this->info("System identified as: {$os}. Preparing binaries...");
 
-        $binaryPath = base_path('vendor/khaliqueahmed/laravel-local-ai/bin/' . strtolower($os) . '-x64/llama-cli');
+        $binaryPath = base_path('vendor/khaliqueahmed-laraveldeveloper/laravel-local-ai/bin/' . strtolower($os) . '-x64/llama-cli');
 
         if ($os !== 'Windows') {
             // Remove Unix lock execution flags silently

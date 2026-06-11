@@ -2,7 +2,7 @@
 
 namespace khaliqueahmed\LocalAI;
 
-use Illuminate\Support\Facades\Process;
+use Symfony\Component\Process\Process as SymfonyProcess;
 use Exception;
 
 class LocalAIEngine
@@ -13,7 +13,7 @@ class LocalAIEngine
     public function __construct()
     {
         $os = strtolower(PHP_OS_FAMILY);
-        $this->binaryPath = base_path("vendor/khaliqueahmed/laravel-local-ai/bin/{$os}-x64/llama-cli" . ($os === 'windows' ? '.exe' : ''));
+        $this->binaryPath = base_path("vendor/khaliqueahmed-laraveldeveloper/laravel-local-ai/bin/{$os}-x64/llama-cli" . ($os === 'windows' ? '.exe' : ''));
         $this->modelPath = storage_path(config('local-ai.model_path'));
     }
 
@@ -23,19 +23,25 @@ class LocalAIEngine
             throw new Exception("Local model (.gguf) file not found at: {$this->modelPath}. Please place your model file there.");
         }
 
-        // Native background process execution via server CPU/GPU streams
-        $result = Process::run([
+        $threads = (int) config('local-ai.threads', 1);
+
+        // Use Symfony Process so we can disable the default 60s timeout
+        $process = new SymfonyProcess([
             $this->binaryPath,
             '-m', $this->modelPath,
             '-p', $prompt,
             '-n', (string)$maxTokens,
-            '--quiet'
+            '-t', (string) max(1, $threads),
         ]);
 
-        if ($result->failed()) {
-            throw new Exception("Local Core Processing Error: " . $result->errorOutput());
+        // disable timeout for long-running model execution
+        $process->setTimeout(null);
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            throw new Exception("Local Core Processing Error: " . $process->getErrorOutput());
         }
 
-        return trim($result->output());
+        return trim($process->getOutput());
     }
 }
