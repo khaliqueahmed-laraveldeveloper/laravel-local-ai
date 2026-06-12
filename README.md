@@ -13,6 +13,9 @@ php artisan vendor:publish --provider="khaliqueahmed\LocalAI\LocalAIServiceProvi
 
 3. Place your model file at `storage/ai/models/llama-3b.gguf` or update the path in `config/local-ai.php`.
 
+   Download a GGUF model from Hugging Face, for example:
+   https://huggingface.co/eachadea/llama-3b-hf
+
 4. Run the install helper:
 
 ```bash

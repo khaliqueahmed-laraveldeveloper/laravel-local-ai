@@ -6,4 +6,7 @@ return [
 
     // Number of threads to use for the local model process. Lower means less CPU/RAM.
     'threads' => 1,
+
+    // Context size for the local model. Increase for longer prompt history.
+    'context' => 512,
 ];

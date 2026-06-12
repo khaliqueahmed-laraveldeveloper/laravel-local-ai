@@ -24,24 +24,61 @@ class LocalAIEngine
         }
 
         $threads = (int) config('local-ai.threads', 1);
+        $context = (int) config('local-ai.context', 512);
 
-        // Use Symfony Process so we can disable the default 60s timeout
-        $process = new SymfonyProcess([
+        $command = [
             $this->binaryPath,
             '-m', $this->modelPath,
             '-p', $prompt,
             '-n', (string)$maxTokens,
             '-t', (string) max(1, $threads),
-        ]);
+            '-c', (string) max(1, $context),
+            '--single-turn',
+            '--no-mmap',
+            '--log-disable',
+            '--no-display-prompt'
+        ];
+
+
+        // Use Symfony Process so we can disable the default 60s timeout
+        $process = new SymfonyProcess($command);
 
         // disable timeout for long-running model execution
         $process->setTimeout(null);
-        $process->run();
+       
+        $output='';
+        
+        $process->run(function($type,$buffer) use (&$output){
+            $output.=$buffer;
+        });
 
-        if (! $process->isSuccessful()) {
+
+        if (!$process->isSuccessful()) {
             throw new Exception("Local Core Processing Error: " . $process->getErrorOutput());
         }
+        
+        $rawOutput = trim($output);
 
-        return trim($process->getOutput());
+
+        if (str_contains($rawOutput, '> ')) {
+            $parts = explode('> ', $rawOutput, 2);
+            $promptAndAnswer = end($parts); 
+        } else {
+            $promptAndAnswer = $rawOutput;
+        }
+
+
+        $promptLength = strlen($prompt);
+
+
+        $onlyAnswer = substr($promptAndAnswer, $promptLength + 50);
+
+        $onlyAnswer = preg_replace('/\[\s*Prompt:.*$/is', '', $onlyAnswer);
+        $onlyAnswer = str_replace('Exiting...', '', $onlyAnswer);
+
+
+        return trim($onlyAnswer);
+
+
     }
 }
